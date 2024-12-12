@@ -1,6 +1,5 @@
 //! ACPI, LAPIC timer, etc.
 use alloc::alloc::Global;
-use core::cell::Cell;
 use core::num::Wrapping;
 use core::ptr::NonNull;
 use core::sync::atomic::AtomicU32;
