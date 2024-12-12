@@ -1,0 +1,3 @@
+[toolchain]
+version = "stable"
+targets = ["x86_64-unknown-uefi"]
