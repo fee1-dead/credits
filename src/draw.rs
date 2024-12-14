@@ -55,6 +55,7 @@ pub struct FrameBufferManager {
     pub horiz_chars: usize,
     pub bytes_per_pixel: usize,
     pub stride: usize,
+    scale_factor: usize,
     idx: usize,
     /// Shift of the red mask in RGB.
     pub red_mask_shift: u8,
@@ -80,11 +81,12 @@ impl fmt::Debug for FrameBufferManager {
 
 impl FrameBufferManager {
     pub fn new(b: &Framebuffer<'_>) -> Self {
+        let scale_factor = 8;
         let horiz_res = b.width() as usize;
-        let horiz_chars = horiz_res / FONT_WIDTH as usize;
+        let horiz_chars = horiz_res / FONT_WIDTH as usize / scale_factor;
 
         let vert_res = b.height() as usize;
-        let vert_chars = vert_res / FONT_HEIGHT as usize;
+        let vert_chars = vert_res / FONT_HEIGHT as usize / scale_factor;
 
         let chars = vec![' '; horiz_chars * vert_chars].into_boxed_slice();
 
@@ -99,6 +101,7 @@ impl FrameBufferManager {
             horiz_chars,
             bytes_per_pixel,
             stride,
+            scale_factor,
             idx: 0,
             red_mask_shift: b.red_mask_shift(),
             green_mask_shift: b.green_mask_shift(),
@@ -148,6 +151,7 @@ impl FrameBufferManager {
                 self.fb,
                 self.bytes_per_pixel,
                 self.stride,
+                self.scale_factor,
                 c,
                 x,
                 y,
@@ -174,6 +178,7 @@ impl FrameBufferManager {
         fb: &mut [u8],
         bytes_per_pixel: usize,
         stride: usize,
+        scale_factor: usize,
         c: char,
         cx: usize,
         cy: usize,
@@ -182,26 +187,30 @@ impl FrameBufferManager {
     ) {
         assert_eq!(4, bytes_per_pixel);
 
-        let font_height = FONT_HEIGHT;
-        let font_width = FONT_WIDTH;
+        let font_height = FONT_HEIGHT * scale_factor;
+        let font_width = FONT_WIDTH * scale_factor;
 
         let glyph = to_bitmap(c);
 
         let mut offset = (cy * font_height * stride) + (cx * font_width * bytes_per_pixel);
 
         for row in glyph {
-            let mut line = offset;
-            let mut mask = 1 << (font_width - 1);
+            for _ in 0..scale_factor {
+                let mut line = offset;
+                let mut mask = 1 << (FONT_WIDTH - 1);
 
-            for _ in 0..font_width {
-                unsafe {
-                    let pixel = fb.as_mut_ptr().add(line) as *mut u32;
-                    pixel.write_volatile(if row & mask != 0 { fg } else { bg });
+                for x in 0..font_width {
+                    unsafe {
+                        let pixel = fb.as_mut_ptr().add(line) as *mut u32;
+                        pixel.write_volatile(if row & mask != 0 { fg } else { bg });
+                    }
+                    if (x + 1) % scale_factor == 0 {
+                        mask >>= 1;
+                    }
+                    line += bytes_per_pixel;
                 }
-                mask >>= 1;
-                line += bytes_per_pixel;
+                offset += stride;
             }
-            offset += stride;
         }
     }
 
@@ -210,6 +219,7 @@ impl FrameBufferManager {
             self.fb,
             self.bytes_per_pixel,
             self.stride,
+            self.scale_factor,
             c,
             cx,
             cy,

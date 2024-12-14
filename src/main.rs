@@ -24,8 +24,9 @@ pub extern "C" fn kernel_start() -> ! {
     sprintln!("im alive");
     setup::init();
     sprintln!("huh");
-    println!("hello everyone");
-    delay(Duration::from_secs(5));
-    println!("how are you doing? :)");
+    for _ in 0..8 {
+        println!(" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0");
+        println!("0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ");
+    }
     loop {}
 }
