@@ -8,3 +8,14 @@
 
 
 BOOTX64.EFI: limine bootloader.
+
+## Notes
+
+16 rows
+32 columns
+
+font width: 8
+font height: 16
+
+base res: 256x256
+upscale 4x: 1024x1024
